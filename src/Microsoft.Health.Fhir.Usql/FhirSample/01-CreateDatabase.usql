@@ -1,0 +1,2 @@
+﻿DROP DATABASE IF EXISTS [fhirsample];
+CREATE DATABASE [fhirsample];

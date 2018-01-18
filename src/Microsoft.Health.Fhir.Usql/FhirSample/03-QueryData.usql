@@ -1,0 +1,71 @@
+﻿REFERENCE ASSEMBLY fhirsample.[Newtonsoft.Json];
+REFERENCE ASSEMBLY fhirsample.[Microsoft.Health.Fhir.Usql]; 
+REFERENCE ASSEMBLY fhirsample.[Hl7.Fhir.STU3.Core]; 
+REFERENCE ASSEMBLY fhirsample.[Hl7.Fhir.Support]; 
+REFERENCE ASSEMBLY fhirsample.[Hl7.FhirPath]; 
+REFERENCE ASSEMBLY fhirsample.[System.ValueTuple]; 
+
+USING Microsoft.Health.Fhir.Usql.Json;
+
+DECLARE @InputPath string = "/rawresources/fhirupload.json";
+
+DECLARE @OutputFile string = "/StandardizedData/NoShows.csv";
+
+@RawData = 
+    EXTRACT 
+     [resourceId] string
+    ,[Timestamp] DateTime
+    ,[resourceTypeName] string
+    ,[isHistory] bool
+    ,[isDeleted] bool
+    ,[rawResource] string
+    FROM @InputPath
+    USING new FhirJsonExtractor();
+
+@AppointmentMaps =
+     SELECT a.Appointment["Reference"]AS Reference,
+           a.Appointment["Status"] AS Status,
+           a.Appointment["Start"] AS Start,
+           a.Appointment["Created"] AS Created
+     FROM  
+         (SELECT FhirFunctions.Tuple([rawResource], "data", FhirPathColumn.Create("Reference", "Appointment.participant.actor.reference"),
+                                                        FhirPathColumn.Create("Status", "Appointment.status"),
+                                                        FhirPathColumn.Create("Start", "Appointment.start"),
+                                                        FhirPathColumn.Create("Created", "Appointment.created")) AS Appointment
+          FROM @RawData
+          WHERE [isHistory] == false
+                  AND [isDeleted] == false
+                  AND [resourceTypeName] == "Appointment") AS a;
+     
+@PatientMaps =
+    SELECT p.Patient["Reference"] AS Reference,
+           p.Patient["First"] AS First,
+           p.Patient["Last"] AS Last,
+           p.Patient["Gender"]AS Gender,
+           p.Patient["BirthDate"]AS BirthDate
+    FROM
+        (SELECT FhirFunctions.Tuple([rawResource], "data", FhirPathColumn.Create("Reference", "'Patient/' + Patient.id"),
+                                                  FhirPathColumn.Create("First", "Patient.name.first().given.first()"),
+                                                  FhirPathColumn.Create("Last", "Patient.name.first().family"),
+                                                  FhirPathColumn.Create("Gender", "Patient.gender"),
+                                                  FhirPathColumn.Create("BirthDate", "Patient.birthDate")) AS Patient
+        FROM @RawData
+        WHERE [isHistory] == false
+                AND [isDeleted] == false
+                AND [resourceTypeName] == "Patient") AS p;
+
+@PatientAppointments =
+    SELECT p.Reference,
+           p.First,
+           p.Last,
+           p.Gender,
+           p.BirthDate,
+           a.Status,
+           a.Start,
+           a.Created
+    FROM @PatientMaps AS p
+         INNER JOIN @AppointmentMaps AS a ON p.Reference == a.Reference;
+                                         
+OUTPUT @PatientAppointments   
+TO @OutputFile 
+USING Outputters.Csv();  

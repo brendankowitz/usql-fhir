@@ -1,0 +1,7 @@
+﻿USE DATABASE [fhirsample];
+CREATE ASSEMBLY [Newtonsoft.Json] FROM @"Assemblies/Fhir/Newtonsoft.Json.dll";
+CREATE ASSEMBLY [Microsoft.Health.Fhir.Usql] FROM @"Assemblies/Fhir/Microsoft.Health.Fhir.Usql.dll";
+CREATE ASSEMBLY [Hl7.Fhir.STU3.Core] FROM @"Assemblies/Fhir/Hl7.Fhir.STU3.Core.dll";
+CREATE ASSEMBLY [Hl7.Fhir.Support] FROM @"Assemblies/Fhir/Hl7.Fhir.Support.dll";
+CREATE ASSEMBLY [Hl7.FhirPath] FROM @"Assemblies/Fhir/Hl7.FhirPath.dll";
+CREATE ASSEMBLY [System.ValueTuple] FROM @"Assemblies/Fhir/System.ValueTuple.dll";
