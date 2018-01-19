@@ -59,11 +59,10 @@
     <Reference Include="Microsoft.Analytics.Types" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Json\FhirProcessor.cs" />
     <Compile Include="Json\FhirFunctions.cs" />
     <Compile Include="Json\FhirJsonExtractor.cs" />
-    <Compile Include="Json\FhirPathColumn.cs" />
-    <Compile Include="Json\JsonExtractor.cs" />
-    <Compile Include="Json\JsonFunctions.cs" />
+    <Compile Include="Json\FhirPathValue.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

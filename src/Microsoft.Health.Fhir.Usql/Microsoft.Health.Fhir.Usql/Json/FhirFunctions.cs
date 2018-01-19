@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Hl7.Fhir.FhirPath;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Serialization;
@@ -13,23 +15,63 @@ namespace Microsoft.Health.Fhir.Usql.Json
     {
         private static readonly FhirJsonParser Parser = new FhirJsonParser();
 
-        public static SqlMap<string, string> Tuple(string json, params FhirPathColumn[] fhirPathScalarExpressions)
+        public static SqlMap<string, string> Tuple(string json, params FhirPathValue[] fhirPathScalarExpressions)
         {
+            if (json == null)
+            {
+                throw new ArgumentNullException(nameof(json));
+            }
+
+            if (fhirPathScalarExpressions == null)
+            {
+                throw new ArgumentNullException(nameof(fhirPathScalarExpressions));
+            }
+
             return Tuple<string>(json, null, fhirPathScalarExpressions);
         }
 
-        public static SqlMap<string, T> Tuple<T>(string json, params FhirPathColumn[] fhirPathScalarExpressions)
+        public static SqlMap<string, T> Tuple<T>(string json, params FhirPathValue[] fhirPathScalarExpressions)
         {
+            if (json == null)
+            {
+                throw new ArgumentNullException(nameof(json));
+            }
+
+            if (fhirPathScalarExpressions == null)
+            {
+                throw new ArgumentNullException(nameof(fhirPathScalarExpressions));
+            }
+
             return Tuple<T>(json, null, fhirPathScalarExpressions);
         }
 
-        public static SqlMap<string, string> Tuple(string json, string resourcePath, params FhirPathColumn[] fhirPathScalarExpressions)
+        public static SqlMap<string, string> Tuple(string json, string resourcePath, params FhirPathValue[] fhirPathScalarExpressions)
         {
+            if (json == null)
+            {
+                throw new ArgumentNullException(nameof(json));
+            }
+
+            if (fhirPathScalarExpressions == null)
+            {
+                throw new ArgumentNullException(nameof(fhirPathScalarExpressions));
+            }
+
             return Tuple<string>(json, resourcePath, fhirPathScalarExpressions);
         }
 
-        public static SqlMap<string, T> Tuple<T>(string json, string resourcePath, params FhirPathColumn[] fhirPathScalarExpressions)
+        public static SqlMap<string, T> Tuple<T>(string json, string resourcePath, params FhirPathValue[] fhirPathScalarExpressions)
         {
+            if (json == null)
+            {
+                throw new ArgumentNullException(nameof(json));
+            }
+
+            if (fhirPathScalarExpressions == null)
+            {
+                throw new ArgumentNullException(nameof(fhirPathScalarExpressions));
+            }
+
             if (string.IsNullOrEmpty(json) || fhirPathScalarExpressions == null || fhirPathScalarExpressions.Length <= 0)
             {
                 return new SqlMap<string, T>();
@@ -45,13 +87,24 @@ namespace Microsoft.Health.Fhir.Usql.Json
             }
 
             var root = Parser.Parse<Resource>(fhirJson);
-            return SqlMap.Create(fhirPathScalarExpressions.Select(x =>
-                new KeyValuePair<string, T>(x.ColumnName, ChangeType<T>(root.Scalar(x.FhirPath)))));
+
+            var results = new ConcurrentBag<KeyValuePair<string, T>>();
+
+            Parallel.ForEach(fhirPathScalarExpressions, query =>
+            {
+                results.Add(new KeyValuePair<string, T>(query.ColumnName, ChangeType<T>(root.Scalar(query.FhirPath), query.ValueConverter)));
+            });
+
+            return SqlMap.Create(results);
         }
 
-        private static T ChangeType<T>(object val)
+        internal static T ChangeType<T>(object val, Func<object, object> valueConverter)
         {
-            // Try direct cast
+            if (valueConverter != null)
+            {
+                return (T)valueConverter(val);
+            }
+
             try
             {
                 return (T)val;

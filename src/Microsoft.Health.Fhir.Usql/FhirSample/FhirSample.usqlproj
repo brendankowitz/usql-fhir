@@ -21,13 +21,13 @@
   </PropertyGroup>
   <ItemGroup>
     <Script Include="01-CreateDatabase.usql" />
-    <Script Include="02-RegisterAssemblies.usql" />
+    <Script Include="02-CacheData.usql" />
     <Script Include="03-QueryData.usql" />
     <ScriptCode Include="01-CreateDatabase.usql.cs">
       <DependentUpon>01-CreateDatabase.usql</DependentUpon>
     </ScriptCode>
-    <ScriptCode Include="02-RegisterAssemblies.usql.cs">
-      <DependentUpon>02-RegisterAssemblies.usql</DependentUpon>
+    <ScriptCode Include="02-CacheData.usql.cs">
+      <DependentUpon>02-CacheData.usql</DependentUpon>
     </ScriptCode>
     <ScriptCode Include="03-QueryData.usql.cs">
       <DependentUpon>03-QueryData.usql</DependentUpon>

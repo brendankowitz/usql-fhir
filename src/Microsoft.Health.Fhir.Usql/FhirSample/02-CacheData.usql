@@ -1,0 +1,44 @@
+﻿REFERENCE ASSEMBLY fhirsample.[Newtonsoft.Json];
+REFERENCE ASSEMBLY fhirsample.[Microsoft.Health.Fhir.Usql]; 
+REFERENCE ASSEMBLY fhirsample.[Hl7.Fhir.STU3.Core]; 
+REFERENCE ASSEMBLY fhirsample.[Hl7.Fhir.Support]; 
+REFERENCE ASSEMBLY fhirsample.[Hl7.FhirPath]; 
+REFERENCE ASSEMBLY fhirsample.[System.ValueTuple]; 
+
+USING Microsoft.Health.Fhir.Usql.Json;
+USING Newtonsoft.Json.Linq;
+
+DROP TABLE IF EXISTS FhirDataTable;
+
+CREATE TABLE FhirDataTable (
+           [resourceId] string
+            ,[Timestamp] DateTime
+            ,[resourceTypeName] string
+            ,[isHistory] bool
+            ,[isDeleted] bool
+            ,[rawResourceData] string,
+
+            INDEX sl_idx CLUSTERED (resourceId ASC)
+                DISTRIBUTED BY HASH (resourceTypeName)
+);
+
+@RawData = 
+    EXTRACT 
+     [resourceId] string
+    ,[Timestamp] DateTime
+    ,[resourceTypeName] string
+    ,[isHistory] bool
+    ,[isDeleted] bool
+    ,[rawResource_data] string
+    FROM "/rawresources/fhirupload.json"
+    USING new FhirJsonExtractor();
+
+INSERT INTO FhirDataTable 
+    SELECT 
+        [resourceId]
+        ,[Timestamp]
+        ,[resourceTypeName]
+        ,[isHistory]
+        ,[isDeleted]
+        ,[rawResource_data] AS [rawResourceData]
+    FROM @RawData;
